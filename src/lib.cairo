@@ -1,28 +1,37 @@
-fn main() -> felt252 {
-    fib(16)
+#[starknet::interface]
+trait IBalance<T> {
+    // Returns the current count.
+    fn get(self: @T) -> u64;
+    // Increases the count by one.
+    fn increment(ref self: T);
+    // Decreases the count by one.
+    fn decrement(ref self: T);
 }
 
-fn fib(mut n: felt252) -> felt252 {
-    let mut a: felt252 = 0;
-    let mut b: felt252 = 1;
-    loop {
-        if n == 0 {
-            break a;
-        }
-        n = n - 1;
-        let temp = b;
-        b = a + b;
-        a = temp;
+#[starknet::contract]
+mod Balance {
+    use traits::Into;
+
+    #[storage]
+    struct Storage {
+        count: u64,
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::fib;
+    #[constructor]
+    fn constructor(ref self: ContractState) {
+        self.count.write(0_u64);
+    }
 
-    #[test]
-    #[available_gas(100000)]
-    fn it_works() {
-        assert(fib(16) == 987, 'it works!');
+    #[external(v0)]
+    impl Balance of super::IBalance<ContractState> {
+        fn get(self: @ContractState) -> u64 {
+            self.count.read()
+        }
+        fn increment(ref self: ContractState) {
+            self.count.write(self.count.read() + 1);
+        }
+        fn decrement(ref self: ContractState) {
+            self.count.write(self.count.read() - 1);
+        }
     }
 }
